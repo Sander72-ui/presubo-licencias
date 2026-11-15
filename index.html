@@ -161,7 +161,8 @@
     </div>
 
     <div id="v-sync" class="oculto">
-      <div class="tarjeta"><h3>Sincronizar con la computadora</h3>
+      <div class="tarjeta" id="s-nube"></div>
+      <div class="tarjeta"><h3>Sincronizar con archivos (sin la nube)</h3>
         <p class="sub" style="margin-top:0">Las ventas hechas aquí pasan al registro de la PC con un archivo. Puede enviarlo las veces que quiera: lo repetido se ignora.</p>
         <div class="resumen" id="s-pend"></div>
         <button class="btn n" onclick="exportarPC()">⬆ Exportar ventas a la PC</button>
@@ -244,6 +245,13 @@
   </div>
 </div></div>
 
+<div class="hoja" id="h-qr"><div class="c">
+  <div class="t"><h2>Vincular con la PC</h2><button onclick="cerrarEscaner()">×</button></div>
+  <p class="sub" style="margin-top:0">En la PC: Administrador › 📱 Móviles › ☁ <b>Vincular un celular (QR)</b>. Apunte la cámara al código.</p>
+  <video id="qr-video" playsinline muted style="width:100%;border-radius:14px;background:#000;aspect-ratio:1;object-fit:cover"></video>
+  <button class="btn" onclick="pegarCodigo()">No puedo escanear: pegar el código</button>
+</div></div>
+
 <div class="toast" id="toast"></div>
 <div class="cargando" id="cargando">Procesando…</div>
 
@@ -296,13 +304,13 @@ async function llaveDeClave(clave, kdf) {
     { name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]);
 }
 async function descifrar(paq, clave) {  // -> pkcs8 (ArrayBuffer) o error si la contrasena no es correcta
-  const k = await llaveDeClave(clave, paq.kdf);
+  const k = await llaveDeClave(clave, paq.kdf); ULTIMA_K = k;
   return crypto.subtle.decrypt({ name: "AES-GCM", iv: d64(paq.clave.iv), additionalData: enc(paq.dispositivo) }, k, d64(paq.clave.datos));
 }
 async function cifrar(paq, pkcs8, clave) {
   const sal = crypto.getRandomValues(new Uint8Array(16)), iv = crypto.getRandomValues(new Uint8Array(12));
   const kdf = { alg: "PBKDF2-SHA256", iter: 310000, sal: b64u(sal) };
-  const k = await llaveDeClave(clave, kdf);
+  const k = await llaveDeClave(clave, kdf); ULTIMA_K = k;
   const datos = await crypto.subtle.encrypt({ name: "AES-GCM", iv, additionalData: enc(paq.dispositivo) }, k, pkcs8);
   return { ...paq, kdf, clave: { alg: "AES-256-GCM", iv: b64u(iv), datos: b64u(datos) } };
 }
@@ -315,6 +323,7 @@ async function firmarJWT(claims) {
 }
 
 // ---------------------------------------------------------------- estado
+let ULTIMA_K = null, KPASS = null, SYNC = null, NUBE = {}, SINC = false, ULT_SYNC = null, ERR_SYNC = null, ESCANEO = null;
 let PAQ = null, LLAVE = null, DLG = null, CLIENTES = [], OPS = [], filtro = "todos", ACTUAL = null, ULTIMO = null, NUEVO_PAQ = null;
 let planV = "mensual", planR = "mensual", ultimaActividad = Date.now();
 
@@ -363,7 +372,7 @@ async function activar() {
     if (!(await leer("ops"))) await guardar("ops", []);
     $("aut-clave").value = ""; NUEVO_PAQ = null;
     PAQ = paq; DLG = json64(PAQ.dlg.split(".")[1]);
-    LLAVE = await firmaDe(pkcs8);
+    LLAVE = await firmaDe(pkcs8); KPASS = ULTIMA_K; SYNC = await abrirVinculo(PAQ);
     await abrirApp(); toast("Celular activado. Ya puede emitir licencias.");
   } catch (e) { error(e); } finally { cargando(false); }
 }
@@ -378,7 +387,7 @@ async function entrar() {
   $("l-ok").disabled = true; cargando(true);
   try {
     const pkcs8 = await descifrar(PAQ, $("l-clave").value);
-    LLAVE = await firmaDe(pkcs8);
+    LLAVE = await firmaDe(pkcs8); KPASS = ULTIMA_K; SYNC = await abrirVinculo(PAQ);
     await guardar("fallos", { n: 0, hasta: 0 });
     $("l-clave").value = ""; $("l-error").classList.add("oculto");
     await abrirApp();
@@ -391,7 +400,7 @@ async function entrar() {
   } finally { $("l-ok").disabled = false; cargando(false); }
 }
 function mostrarErrorLogin(t) { $("l-error").textContent = t; $("l-error").classList.remove("oculto"); }
-function bloquear() { LLAVE = null; cerrarHoja(); $("l-clave").value = ""; pantalla("s-login"); }
+function bloquear() { LLAVE = KPASS = SYNC = null; cerrarEscaner(); cerrarHoja(); $("l-clave").value = ""; pantalla("s-login"); }
 for (const ev of ["pointerdown", "keydown"]) document.addEventListener(ev, () => ultimaActividad = Date.now(), { passive: true });
 setInterval(() => { if (LLAVE && Date.now() - ultimaActividad > BLOQUEO_INACTIVO_MIN * 60000) bloquear(); }, 20000);
 document.addEventListener("visibilitychange", () => {
@@ -402,6 +411,7 @@ document.addEventListener("visibilitychange", () => {
 async function cargarDatos() {
   const snap = (await leer("clientes")) || { generado: "", lista: [] };
   OPS = (await leer("ops")) || [];
+  NUBE = (await leer("nube")) || {};
   const mapa = new Map(snap.lista.map((c) => [c.clave, { ...c, origen: "PC", hist: [] }]));
   for (const op of [...OPS].sort((a, b) => a.licencia.emitida.localeCompare(b.licencia.emitida))) {
     const prev = mapa.get(op.cliente.clave);
@@ -426,6 +436,7 @@ async function abrirApp() {
   pantalla("s-app"); ultimaActividad = Date.now();
   $("h-movil").textContent = `${PAQ.nombre} · ${PAQ.dispositivo}`;
   await cargarDatos(); avisos(); pintar(); pintarSync(); vista("clientes");
+  sincronizarNube();
 }
 function diasAutorizacion() { return Math.floor((DLG.exp * 1000 - Date.now()) / 864e5); }
 function avisos() {
@@ -433,10 +444,12 @@ function avisos() {
   let h = "";
   if (d < 0) h += `<div class="aviso ro"><b>La autorización de este celular venció.</b> Cree una nueva en la PC (📱 Móviles) y cárguela en Sincronizar.</div>`;
   else if (d <= 15) h += `<div class="aviso am">La autorización de este celular vence en <b>${d} día(s)</b> (${f(PAQ.vence)}). Renuévela desde la PC.</div>`;
-  if (pend >= 1) h += `<div class="aviso am"><b>${pend}</b> venta(s) sin pasar a la PC. Vaya a <b>Sincronizar</b> cuando pueda.</div>`;
+  const enNube = enLaNube();
+  if (pend - enNube >= 1) h += `<div class="aviso am"><b>${pend - enNube}</b> venta(s) sin pasar a la PC. ${SYNC ? "Se enviarán solas cuando haya internet." : "Vaya a <b>Sincronizar</b> cuando pueda."}</div>`;
   $("avisos").innerHTML = h;
 }
 const pendientes = () => OPS.filter((o) => !o.exportada).length;
+const enLaNube = () => { const s = new Set((NUBE.subido || "").split(",")); return OPS.filter((o) => !o.exportada && s.has(o.id)).length; };
 
 function vista(v) {
   for (const x of ["clientes", "vender", "sync"]) { $("v-" + x).classList.toggle("oculto", x !== v); $("t-" + x).classList.toggle("on", x === v); }
@@ -500,6 +513,7 @@ async function emitir(cliente, tipo, plan, hwid, desde, hasta, gracia, monto, pa
   $("o-sub").innerHTML = `<b>${esc(cliente.nombre)}</b><br>plan ${np} · del ${f(desde)} al ${f(hasta)}<br><span class="sub">equipo ${hwid.slice(0, 6)}… · ${esc(cliente.clave)}</span>`;
   $("o-msg").textContent = op.licencia.mensaje;
   abrirHoja("h-listo");
+  sincronizarNube();
   return op;
 }
 
@@ -553,7 +567,7 @@ function verCliente(clave) {
     fila("CI / NIT", esc(c.ci_nit)) + fila("Celular", esc(c.celular)) + fila("Correo", esc(c.email)) +
     fila("Ciudad", esc([c.ciudad, c.departamento].filter(Boolean).join(", "))) + fila("Empresa", esc(c.empresa)) + fila("Registro", c.origen === "PC" ? "PC" : "este celular");
   $("c-hist").innerHTML = c.hist.length ? [...c.hist].reverse().map((o) => `<div class="hist"><b>${esc(o.licencia.tipo)}</b> · ${f(o.licencia.emitida)} · ${nPlan[o.licencia.plan] || o.licencia.plan}
-      hasta ${f(o.licencia.hasta)} · Bs ${bs(o.licencia.monto)} ${o.exportada ? "· <span class='sub'>ya en la PC</span>" : "· <span style='color:var(--ambar)'>pendiente de pasar a la PC</span>"}</div>`).join("")
+      hasta ${f(o.licencia.hasta)} · Bs ${bs(o.licencia.monto)} ${o.exportada ? "· <span class='sub'>ya en la PC</span>" : (NUBE.subido || "").split(",").includes(o.id) ? "· <span class='sub'>en la nube, llegará a la PC</span>" : "· <span style='color:var(--ambar)'>pendiente de pasar a la PC</span>"}</div>`).join("")
     : `<p class="sub" style="margin:0">Las licencias anteriores de este cliente están en el registro de la PC.</p>`;
   $("c-reenviar").classList.toggle("oculto", !c.hist.length);
   abrirHoja("h-cliente");
@@ -618,6 +632,7 @@ function whatsapp(op) {
 
 // ---------------------------------------------------------------- sincronizacion
 function pintarSync() {
+  pintarNube();
   const p = pendientes();
   $("s-pend").innerHTML = OPS.length ? `<b>${p}</b> venta(s) pendientes de pasar a la PC · ${OPS.length} emitidas en este celular` : "Aún no emitió licencias en este celular.";
   const d = diasAutorizacion();
@@ -650,7 +665,11 @@ async function renovarAutorizacion(inp) {
   try {
     const pkcs8 = await descifrar(p, clave).catch(() => { throw new Error("Contraseña incorrecta"); });
     const { clientes, ...paq } = p;
-    await guardar("paquete", paq); PAQ = paq; DLG = json64(PAQ.dlg.split(".")[1]); LLAVE = await firmaDe(pkcs8);
+    const antes = SYNC;
+    PAQ = paq; DLG = json64(PAQ.dlg.split(".")[1]); LLAVE = await firmaDe(pkcs8); KPASS = ULTIMA_K;
+    SYNC = await abrirVinculo(PAQ);
+    if (!SYNC && antes) { SYNC = antes; PAQ.sync = await sellarVinculo(SYNC); }  // conservar el vinculo con la nube
+    await guardar("paquete", PAQ);
     if (clientes?.length) await guardar("clientes", { generado: p.generado || ahoraISO(), lista: clientes });
     await abrirApp(); toast("Autorización actualizada. Use la nueva contraseña para entrar.");
   } catch (e) { error(e); } finally { cargando(false); }
@@ -662,7 +681,9 @@ async function cambiarClave() {
     if (n !== $("p-nueva2").value) throw new Error("Las contraseñas nuevas no coinciden.");
     cargando(true);
     const pkcs8 = await descifrar(PAQ, $("p-actual").value).catch(() => { throw new Error("La contraseña actual no es correcta"); });
-    PAQ = await cifrar(PAQ, pkcs8, n); await guardar("paquete", PAQ);
+    PAQ = await cifrar(PAQ, pkcs8, n); KPASS = ULTIMA_K;
+    if (SYNC) PAQ.sync = await sellarVinculo(SYNC); else delete PAQ.sync;
+    await guardar("paquete", PAQ);
     for (const id of ["p-actual", "p-nueva", "p-nueva2"]) $(id).value = "";
     cerrarHoja(); toast("Contraseña cambiada");
   } catch (e) { error(e); } finally { cargando(false); }
@@ -670,9 +691,147 @@ async function cambiarClave() {
 async function borrarTodo() {
   const p = pendientes();
   if (!confirm((p ? `ATENCIÓN: hay ${p} venta(s) sin pasar a la PC y se perderán.\n\n` : "") + "¿Quitar la autorización y borrar los datos de este celular?")) return;
-  for (const k of ["paquete", "clientes", "ops", "fallos"]) await borrar(k);
+  for (const k of ["paquete", "clientes", "ops", "fallos", "nube"]) await borrar(k);
   LLAVE = PAQ = null; location.reload();
 }
+
+// ---------------------------------------------------------------- sincronizacion automatica (nube privada)
+// El vinculo (repositorio, acceso y llave de cifrado) se guarda cifrado con la contrasena de la app.
+async function abrirVinculo(paq) {
+  if (!paq?.sync || !KPASS) return null;
+  try {
+    const t = await crypto.subtle.decrypt({ name: "AES-GCM", iv: d64(paq.sync.iv), additionalData: enc("sync:" + paq.dispositivo) }, KPASS, d64(paq.sync.datos));
+    const v = JSON.parse(new TextDecoder().decode(t));
+    return v.t === "pbsync" ? v : null;
+  } catch { return null; }
+}
+async function sellarVinculo(v) {
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const d = await crypto.subtle.encrypt({ name: "AES-GCM", iv, additionalData: enc("sync:" + PAQ.dispositivo) }, KPASS, enc(JSON.stringify(v)));
+  return { iv: b64u(iv), datos: b64u(d) };
+}
+const aB64 = (txt) => { let s = ""; enc(txt).forEach((x) => s += String.fromCharCode(x)); return btoa(s); };
+const deB64 = (s) => new TextDecoder().decode(Uint8Array.from(atob(String(s).replace(/\s/g, "")), (c) => c.charCodeAt(0)));
+async function huella(token) { const h = new Uint8Array(await crypto.subtle.digest("SHA-256", enc(token))); return [...h].slice(0, 16).map((x) => x.toString(16).padStart(2, "0")).join(""); }
+const llaveNube = () => crypto.subtle.importKey("raw", d64(SYNC.s), "AES-GCM", false, ["encrypt", "decrypt"]);
+async function sellar(ruta, obj) {
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const d = await crypto.subtle.encrypt({ name: "AES-GCM", iv, additionalData: enc(ruta) }, await llaveNube(), enc(JSON.stringify(obj)));
+  return JSON.stringify({ v: 1, iv: b64u(iv), datos: b64u(d) });
+}
+async function abrirSello(ruta, texto) {
+  const x = JSON.parse(texto);
+  const d = await crypto.subtle.decrypt({ name: "AES-GCM", iv: d64(x.iv), additionalData: enc(ruta) }, await llaveNube(), d64(x.datos));
+  return JSON.parse(new TextDecoder().decode(d));
+}
+async function gh(metodo, ruta, cuerpo, v = SYNC) {
+  let r;
+  try {
+    r = await fetch(`https://api.github.com/repos/${v.r}/contents/${ruta}`, { method: metodo, cache: "no-store",
+      headers: { Authorization: "Bearer " + v.k, Accept: "application/vnd.github+json" }, body: cuerpo ? JSON.stringify(cuerpo) : undefined });
+  } catch { throw new Error("Sin conexión a internet"); }
+  if (r.status === 404) return null;
+  if (r.status === 401) throw new Error("El acceso a la nube venció o no es válido: vuelva a vincular desde la PC.");
+  if (r.status === 403) throw new Error("La nube no da permiso de escritura: revise el token en la PC.");
+  if (r.status === 409) throw new Error("La nube cambió al mismo tiempo: se reintentará.");
+  if (!r.ok) throw new Error("La nube respondió con el error " + r.status);
+  return r.json();
+}
+async function sincronizarNube(manual) {
+  if (!SYNC || !LLAVE || SINC) return;
+  if (!navigator.onLine) { ERR_SYNC = "Sin internet: se sincronizará cuando vuelva la conexión."; pintarNube(); if (manual) toast(ERR_SYNC, true); return; }
+  SINC = true; pintarNube();
+  try {
+    // 1) lo que dejó la PC: lista de clientes y qué ventas ya recibió
+    const pc = await gh("GET", "pc/clientes.json");
+    if (pc && pc.content) {
+      const d = await abrirSello("pc/clientes.json", deB64(pc.content));
+      const rec = new Set(d.recibidas || []);
+      let cambio = false;
+      for (const o of OPS) if (!o.exportada && rec.has(await huella(o.licencia.token))) { o.exportada = true; cambio = true; }
+      if (cambio) await guardar("ops", OPS);
+      const snap = await leer("clientes");
+      if (!snap || (d.generado || "") > (snap.generado || "")) await guardar("clientes", { generado: d.generado, lista: d.clientes || [] });
+    }
+    // 2) subir las ventas que la PC todavía no tiene
+    const pend = OPS.filter((o) => !o.exportada);
+    const firma = pend.map((o) => o.id).join(",");
+    if (firma !== (NUBE.subido ?? null)) {
+      const ruta = `ventas/${PAQ.dispositivo}.json`;
+      const datos = { tipo: "presubo-sync", v: 1, dispositivo: PAQ.dispositivo, generado: ahoraISO(),
+        operaciones: pend.map((o) => ({ cliente: o.cliente, licencia: { ...o.licencia, mensaje: undefined } })) };
+      const prev = await gh("GET", ruta);
+      await gh("PUT", ruta, { message: `Celular ${PAQ.dispositivo}: ${pend.length} venta(s)`, content: aB64(await sellar(ruta, datos)), ...(prev?.sha ? { sha: prev.sha } : {}) });
+      NUBE = { ...NUBE, subido: firma }; await guardar("nube", NUBE);
+    }
+    ULT_SYNC = ahoraISO(); ERR_SYNC = null;
+    await cargarDatos(); avisos(); pintar();
+    if (manual) toast("Sincronizado con la PC");
+  } catch (e) { ERR_SYNC = e.message || String(e); if (manual) error(e); }
+  finally { SINC = false; pintarNube(); if (!$("v-sync").classList.contains("oculto")) pintarSync(); }
+}
+function pintarNube() {
+  const e = $("s-nube"); if (!e || !PAQ) return;
+  if (!SYNC) {
+    e.innerHTML = `<h3>☁ Sincronización automática</h3>
+      <p class="sub" style="margin-top:0">Vincule este celular con la PC y las ventas pasarán solas al registro (y la lista de clientes llegará sola) cada vez que haya internet. Todo viaja cifrado.</p>
+      <button class="btn n" onclick="abrirEscaner()">📷 Vincular con la PC</button>`;
+    return;
+  }
+  const est = SINC ? "sincronizando…" : ERR_SYNC ? "sin conexión" : "activa";
+  e.innerHTML = `<h3>☁ Sincronización automática <span class="est ${ERR_SYNC ? "e-por-vencer" : "e-vigente"}" style="float:right">${est}</span></h3>
+    <p class="sub" style="margin-top:0">Se sincroniza al entrar, después de cada venta y cada 2 minutos con internet.<br>
+    Última vez: <b>${ULT_SYNC ? f(ULT_SYNC) + " " + ULT_SYNC.slice(11, 16) : "—"}</b>${enLaNube() ? ` · ${enLaNube()} venta(s) en la nube esperando que abra el Administrador en la PC` : ""}</p>
+    ${ERR_SYNC ? `<div class="aviso am" style="margin-bottom:0">${esc(ERR_SYNC)}</div>` : ""}
+    <button class="btn n" onclick="sincronizarNube(true)">⇅ Sincronizar ahora</button>
+    <button class="btn" onclick="desvincular()">Desvincular de la nube</button>`;
+}
+async function vincular(texto) {
+  let v; try { v = JSON.parse(texto); } catch { v = null; }
+  if (!v || v.t !== "pbsync" || !v.r || !v.k || !v.s) throw new Error("Ese no es el código de vinculación de PRESU-BO.");
+  cargando(true);
+  try {
+    const prueba = await gh("GET", "LEAME.md", null, v);
+    if (!prueba) throw new Error("No se pudo entrar a la nube con ese código.");
+    SYNC = v; PAQ.sync = await sellarVinculo(v); await guardar("paquete", PAQ);
+    NUBE = {}; await guardar("nube", NUBE);
+    toast("Celular vinculado: la sincronización ya es automática.");
+  } finally { cargando(false); }
+  pintarSync(); await sincronizarNube(true);
+}
+async function desvincular() {
+  if (!confirm("¿Desvincular este celular de la nube?\n\nLas ventas volverán a pasarse a la PC con archivos.")) return;
+  SYNC = null; delete PAQ.sync; await guardar("paquete", PAQ); NUBE = {}; await guardar("nube", NUBE); ERR_SYNC = null;
+  await cargarDatos(); avisos(); pintarSync(); toast("Celular desvinculado");
+}
+async function abrirEscaner() {
+  if (!("BarcodeDetector" in window) || !navigator.mediaDevices?.getUserMedia) return pegarCodigo();
+  abrirHoja("h-qr");
+  try {
+    const st = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false });
+    const vid = $("qr-video"); vid.srcObject = st; await vid.play();
+    const det = new BarcodeDetector({ formats: ["qr_code"] });
+    ESCANEO = { st, t: setInterval(async () => {
+      try {
+        const r = await det.detect(vid);
+        if (r.length && ESCANEO) { const txt = r[0].rawValue; cerrarEscaner(); cerrarHoja(); await vincular(txt).catch(error); }
+      } catch {}
+    }, 350) };
+  } catch (e) { cerrarEscaner(); cerrarHoja(); toast("No se pudo usar la cámara. Pegue el código.", true); pegarCodigo(); }
+}
+function cerrarEscaner() {
+  if (ESCANEO) { clearInterval(ESCANEO.t); ESCANEO.st.getTracks().forEach((x) => x.stop()); ESCANEO = null; }
+  const v = $("qr-video"); if (v) v.srcObject = null;
+  if ($("h-qr")?.classList.contains("on")) cerrarHoja();
+}
+async function pegarCodigo() {
+  cerrarEscaner();
+  const t = prompt("Pegue el código de vinculación (en la PC, debajo del QR: “Copiar código”):");
+  if (t) await vincular(t.trim()).catch(error);
+}
+window.addEventListener("online", () => sincronizarNube());
+setInterval(() => { if (document.visibilityState === "visible") sincronizarNube(); }, 120000);
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") sincronizarNube(); });
 
 window.addEventListener("unhandledrejection", (e) => { e.preventDefault(); error(e.reason); });
 iniciar();

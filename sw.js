@@ -1,5 +1,5 @@
 // PRESU-BO Licencias: funciona sin internet (todo se guarda en el celular la primera vez).
-const CACHE = "pb-licencias-v1";
+const CACHE = "pb-licencias-v2";
 const ARCHIVOS = ["./", "index.html", "manifest.json", "icono-192.png", "icono-512.png", "icono-maskable.png"];
 self.addEventListener("install", (e) => e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ARCHIVOS)).then(() => self.skipWaiting())));
 self.addEventListener("activate", (e) => e.waitUntil(caches.keys().then((ks) => Promise.all(ks.filter((k) => k !== CACHE).map((k) => caches.delete(k)))).then(() => self.clients.claim())));
