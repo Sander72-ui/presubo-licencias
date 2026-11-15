@@ -1,0 +1,681 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0A2A5A">
+<title>PRESU-BO Licencias</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icono-192.png">
+<link rel="apple-touch-icon" href="icono-192.png">
+<style>
+  :root { --azul:#0A2A5A; --azul2:#123a78; --naranja:#FF6B00; --fondo:#F4F6FA; --borde:#E4E8F0; --texto:#1e293b; --suave:#64748b;
+          --verde:#059669; --ambar:#b45309; --rojo:#dc2626; }
+  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html, body { margin:0; background:var(--fondo); color:var(--texto); font:15px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; }
+  button { font:inherit; cursor:pointer; }
+  input, select, textarea { font:inherit; color:inherit; }
+  .oculto { display:none !important; }
+  /* acceso */
+  .pantalla { min-height:100vh; min-height:100dvh; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:24px 18px;
+              background:linear-gradient(160deg,var(--azul),#0e3672); }
+  .caja { background:#fff; border-radius:20px; padding:26px 22px; width:100%; max-width:380px; box-shadow:0 30px 60px rgba(0,0,0,.3); }
+  .caja img { height:56px; display:block; margin:0 auto; border-radius:12px; }
+  .caja h1 { margin:12px 0 2px; font-size:19px; text-align:center; color:var(--azul); }
+  .caja p.s { margin:0 0 18px; text-align:center; color:var(--suave); font-size:13px; }
+  .clave { font-size:20px; text-align:center; letter-spacing:.15em; }
+  /* app */
+  header { position:sticky; top:0; z-index:5; color:#fff; background:linear-gradient(90deg,var(--azul),var(--azul2));
+           padding:calc(env(safe-area-inset-top) + 12px) 16px 12px; display:flex; align-items:center; gap:10px; }
+  header img { height:30px; border-radius:7px; }
+  header b { display:block; font-size:15px; } header span { font-size:11.5px; opacity:.7; }
+  header .bl { margin-left:auto; background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.2); color:#fff; border-radius:10px; padding:6px 10px; font-size:12.5px; }
+  main { padding:14px 14px 96px; max-width:640px; margin:0 auto; }
+  nav { position:fixed; left:0; right:0; bottom:0; z-index:6; background:#fff; border-top:1px solid var(--borde); display:grid; grid-template-columns:repeat(3,1fr);
+        padding-bottom:env(safe-area-inset-bottom); }
+  nav button { border:0; background:none; padding:9px 4px 10px; color:var(--suave); font-size:12px; display:flex; flex-direction:column; align-items:center; gap:2px; }
+  nav button i { font-style:normal; font-size:20px; line-height:1.1; }
+  nav button.on { color:var(--naranja); font-weight:600; }
+  .aviso { border-radius:12px; padding:10px 12px; font-size:13px; margin-bottom:12px; }
+  .aviso.am { background:#fff4dc; color:#7c4a03; border:1px solid #f6dfa8; } .aviso.ro { background:#fde8e8; color:#991b1b; border:1px solid #f7c4c4; }
+  .buscar { width:100%; padding:11px 14px; border:1px solid var(--borde); border-radius:12px; background:#fff; outline:none; margin-bottom:10px; }
+  .chips { display:flex; gap:6px; overflow-x:auto; margin-bottom:10px; padding-bottom:2px; }
+  .chip { flex:none; border:1px solid var(--borde); background:#fff; border-radius:999px; padding:6px 12px; font-size:12.5px; color:var(--suave); }
+  .chip.on { background:var(--azul); color:#fff; border-color:var(--azul); }
+  .cli { background:#fff; border:1px solid var(--borde); border-radius:14px; padding:12px 14px; margin-bottom:8px; display:flex; gap:10px; align-items:center; }
+  .cli .n { font-weight:600; color:var(--azul); } .cli .d { font-size:12px; color:var(--suave); }
+  .cli .est { margin-left:auto; }
+  .est { display:inline-flex; align-items:center; gap:5px; border-radius:999px; padding:3px 9px; font-size:11.5px; font-weight:600; white-space:nowrap; }
+  .est::before { content:""; width:6px; height:6px; border-radius:50%; background:currentColor; }
+  .e-vigente { background:#e7f7ee; color:var(--verde); } .e-por-vencer { background:#fff4dc; color:var(--ambar); }
+  .e-en-gracia { background:#ffe9d6; color:#c2410c; } .e-vencida { background:#fde8e8; color:var(--rojo); } .e-sin-licencia { background:#f1f5f9; color:var(--suave); }
+  .vacio { text-align:center; color:var(--suave); padding:40px 10px; } .vacio b { display:block; color:var(--azul); font-size:16px; margin-bottom:4px; }
+  .tarjeta { background:#fff; border:1px solid var(--borde); border-radius:16px; padding:16px; margin-bottom:12px; }
+  .tarjeta h3 { margin:0 0 10px; font-size:15px; color:var(--azul); }
+  label.c { display:block; font-size:12px; color:var(--suave); font-weight:600; margin-bottom:10px; }
+  .in { display:block; width:100%; margin-top:4px; padding:11px 12px; border:1px solid var(--borde); border-radius:11px; background:#fff; outline:none; font-size:16px; }
+  .in:focus { border-color:#93a8cc; box-shadow:0 0 0 3px rgba(10,42,90,.08); }
+  .in.hw { font-family:ui-monospace,Consolas,monospace; letter-spacing:.04em; text-transform:uppercase; font-size:14px; }
+  .dos { display:grid; grid-template-columns:1fr 1fr; gap:0 10px; }
+  .planes { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin:4px 0 10px; }
+  .plan { border:1.5px solid var(--borde); border-radius:12px; padding:10px 8px; background:#fff; text-align:center; }
+  .plan b { display:block; color:var(--azul); font-size:14px; } .plan span { font-size:11.5px; color:var(--suave); }
+  .plan.on { border-color:var(--naranja); background:#fff7f0; }
+  .btn { display:block; width:100%; border:1px solid var(--borde); background:#fff; border-radius:12px; padding:12px 14px; font-weight:600; color:var(--azul); margin-top:8px; text-align:center; }
+  .btn.p { background:var(--azul); color:#fff; border-color:var(--azul); }
+  .btn.n { background:var(--naranja); color:#fff; border-color:var(--naranja); }
+  .btn.r { color:var(--rojo); }
+  .btn:disabled { opacity:.5; }
+  .resumen { padding:10px 12px; border-radius:12px; background:#eef3fa; color:var(--azul); font-size:13px; margin:6px 0 4px; }
+  dl.datos { display:grid; grid-template-columns:110px 1fr; gap:5px 10px; font-size:13.5px; margin:0; }
+  dl.datos dt { color:var(--suave); } dl.datos dd { margin:0; word-break:break-all; }
+  .hoja { position:fixed; inset:0; z-index:20; background:rgba(10,20,40,.45); display:none; align-items:flex-end; justify-content:center; }
+  .hoja.on { display:flex; }
+  .hoja .c { background:var(--fondo); width:100%; max-width:640px; max-height:92vh; overflow:auto; border-radius:20px 20px 0 0; padding:16px 14px calc(18px + env(safe-area-inset-bottom)); }
+  .hoja .t { display:flex; align-items:center; margin-bottom:10px; } .hoja .t h2 { margin:0; font-size:17px; color:var(--azul); }
+  .hoja .t button { margin-left:auto; border:0; background:#e6ebf3; border-radius:50%; width:32px; height:32px; font-size:18px; color:var(--azul); }
+  .ok { text-align:center; } .ok .ic { width:56px; height:56px; border-radius:50%; background:#e7f7ee; color:var(--verde); display:inline-flex; align-items:center; justify-content:center; font-size:30px; }
+  pre.msg { white-space:pre-wrap; background:#fff; border:1px solid var(--borde); border-radius:12px; padding:10px; font:13px/1.45 system-ui,sans-serif; max-height:180px; overflow:auto; }
+  .hist { font-size:12.5px; border-top:1px solid var(--borde); padding:8px 0; }
+  .sub { font-size:12.5px; color:var(--suave); }
+  .toast { position:fixed; left:50%; bottom:86px; transform:translateX(-50%) translateY(200px); background:var(--azul); color:#fff; padding:11px 16px; border-radius:12px;
+           box-shadow:0 12px 30px rgba(0,0,0,.25); transition:transform .25s; z-index:50; width:max-content; max-width:92vw; font-size:14px; }
+  .toast.on { transform:translateX(-50%); } .toast.err { background:#b91c1c; }
+  .cargando { position:fixed; inset:0; z-index:70; background:rgba(255,255,255,.6); display:none; align-items:center; justify-content:center; font-weight:600; color:var(--azul); }
+  .cargando.on { display:flex; }
+</style>
+</head>
+<body>
+
+<!-- 1. Primera vez: cargar la autorizacion -->
+<section class="pantalla oculto" id="s-inicio"><div class="caja">
+  <img src="icono-192.png" alt="">
+  <h1>PRESU-BO Licencias</h1>
+  <p class="s">Emisión de licencias desde el celular</p>
+  <p style="font-size:13.5px">Para empezar, abra el <b>archivo de autorización</b> (<code>.presubo-movil</code>) que creó en el Administrador de licencias de su computadora
+    (botón <b>📱 Móviles → Autorizar un móvil</b>).</p>
+  <button class="btn n" onclick="$('f-aut').click()">Elegir archivo de autorización</button>
+  <input type="file" id="f-aut" class="oculto" onchange="leerAutorizacion(this)">
+  <div id="aut-paso2" class="oculto" style="margin-top:14px">
+    <div class="resumen" id="aut-info"></div>
+    <label class="c" style="margin-top:10px">Contraseña de la app (la que puso en la computadora)
+      <input class="in clave" type="password" id="aut-clave" autocomplete="current-password"></label>
+    <button class="btn p" onclick="activar()">Activar en este celular</button>
+  </div>
+</div></section>
+
+<!-- 2. Ingreso con contrasena -->
+<section class="pantalla oculto" id="s-login"><div class="caja">
+  <img src="icono-192.png" alt="">
+  <h1>PRESU-BO Licencias</h1>
+  <p class="s" id="l-movil"></p>
+  <label class="c">Contraseña<input class="in clave" type="password" id="l-clave" autocomplete="current-password" onkeydown="event.key==='Enter'&&entrar()"></label>
+  <div id="l-error" class="aviso ro oculto"></div>
+  <button class="btn p" id="l-ok" onclick="entrar()">Entrar</button>
+</div></section>
+
+<!-- 3. App -->
+<section id="s-app" class="oculto">
+  <header><img src="icono-192.png" alt=""><div><b>PRESU-BO Licencias</b><span id="h-movil"></span></div>
+    <button class="bl" onclick="bloquear()">🔒 Salir</button></header>
+  <main>
+    <div id="avisos"></div>
+
+    <div id="v-clientes">
+      <input class="buscar" id="q" placeholder="Buscar cliente, celular, clave o equipo…" oninput="pintar()">
+      <div class="chips" id="chips"></div>
+      <div id="lista"></div>
+    </div>
+
+    <div id="v-vender" class="oculto">
+      <div class="tarjeta"><h3>Nuevo cliente</h3>
+        <label class="c">Nombre completo *<input class="in" id="v-nombre" autocomplete="off"></label>
+        <div class="dos">
+          <label class="c">CI / NIT<input class="in" id="v-ci_nit" inputmode="numeric"></label>
+          <label class="c">Celular<input class="in" id="v-celular" inputmode="tel"></label>
+        </div>
+        <label class="c">Correo<input class="in" id="v-email" type="email" autocomplete="off"></label>
+        <div class="dos">
+          <label class="c">Departamento<select class="in" id="v-departamento"></select></label>
+          <label class="c">Ciudad<input class="in" id="v-ciudad"></label>
+        </div>
+        <label class="c">Empresa<input class="in" id="v-empresa"></label>
+      </div>
+      <div class="tarjeta"><h3>Licencia</h3>
+        <label class="c">ID del equipo del cliente * <span style="font-weight:400">(PRESU-BO › Licencia › Copiar ID)</span>
+          <input class="in hw" id="v-hwid" maxlength="40" autocomplete="off" spellcheck="false"></label>
+        <div class="planes" id="v-planes"></div>
+        <div class="dos">
+          <label class="c">Desde<input class="in" type="date" id="v-desde"></label>
+          <label class="c" id="v-dias-c">Días<input class="in" type="number" id="v-dias" value="15" min="1" max="3660"></label>
+        </div>
+        <div class="dos">
+          <label class="c">Monto (Bs)<input class="in" type="number" id="v-monto" inputmode="decimal" step="0.01"></label>
+          <label class="c">Forma de pago<select class="in" id="v-pago"><option>Efectivo</option><option>QR</option><option>Transferencia</option><option>Otro</option></select></label>
+        </div>
+        <label class="c">Días de gracia<input class="in" type="number" id="v-gracia" value="5" min="0" max="30"></label>
+        <label class="c">Nota<input class="in" id="v-nota"></label>
+        <div class="resumen" id="v-resumen"></div>
+        <button class="btn n" onclick="vender()">Generar licencia</button>
+      </div>
+    </div>
+
+    <div id="v-sync" class="oculto">
+      <div class="tarjeta"><h3>Sincronizar con la computadora</h3>
+        <p class="sub" style="margin-top:0">Las ventas hechas aquí pasan al registro de la PC con un archivo. Puede enviarlo las veces que quiera: lo repetido se ignora.</p>
+        <div class="resumen" id="s-pend"></div>
+        <button class="btn n" onclick="exportarPC()">⬆ Exportar ventas a la PC</button>
+        <button class="btn" onclick="$('f-cli').click()">⬇ Importar clientes de la PC</button>
+        <input type="file" id="f-cli" class="oculto" onchange="importarClientes(this)">
+        <p class="sub">En la PC: Administrador › 📱 Móviles › “Importar ventas del móvil” y “Enviar clientes al móvil”.</p>
+      </div>
+      <div class="tarjeta"><h3>Este celular</h3>
+        <dl class="datos" id="s-info"></dl>
+        <button class="btn" onclick="abrirHoja('h-pass')">Cambiar contraseña</button>
+        <button class="btn" onclick="$('f-aut2').click()">Cargar autorización renovada</button>
+        <input type="file" id="f-aut2" class="oculto" onchange="renovarAutorizacion(this)">
+        <button class="btn r" onclick="borrarTodo()">Quitar la autorización de este celular</button>
+      </div>
+    </div>
+  </main>
+  <nav>
+    <button id="t-clientes" class="on" onclick="vista('clientes')"><i>👥</i>Clientes</button>
+    <button id="t-vender" onclick="vista('vender')"><i>＋</i>Vender</button>
+    <button id="t-sync" onclick="vista('sync')"><i>⇅</i>Sincronizar</button>
+  </nav>
+</section>
+
+<!-- hojas -->
+<div class="hoja" id="h-cliente"><div class="c">
+  <div class="t"><h2 id="c-nombre"></h2><button onclick="cerrarHoja()">×</button></div>
+  <div class="tarjeta"><dl class="datos" id="c-datos"></dl></div>
+  <button class="btn n" onclick="abrirRenovar()">Renovar licencia</button>
+  <button class="btn" onclick="abrirEquipo()">Cambio de equipo</button>
+  <button class="btn" id="c-reenviar" onclick="reenviar()">Volver a enviar la última licencia</button>
+  <div class="tarjeta" style="margin-top:12px"><h3>Historial en este celular</h3><div id="c-hist"></div></div>
+</div></div>
+
+<div class="hoja" id="h-renovar"><div class="c">
+  <div class="t"><h2>Renovar licencia</h2><button onclick="cerrarHoja()">×</button></div>
+  <div class="tarjeta">
+    <div class="planes" id="r-planes"></div>
+    <div class="dos">
+      <label class="c">Desde<input class="in" type="date" id="r-desde"></label>
+      <label class="c" id="r-dias-c">Días<input class="in" type="number" id="r-dias" value="15" min="1" max="3660"></label>
+    </div>
+    <label class="c">ID del equipo<input class="in hw" id="r-hwid" maxlength="40" spellcheck="false"></label>
+    <div class="dos">
+      <label class="c">Monto (Bs)<input class="in" type="number" id="r-monto" inputmode="decimal" step="0.01"></label>
+      <label class="c">Forma de pago<select class="in" id="r-pago"><option>Efectivo</option><option>QR</option><option>Transferencia</option><option>Otro</option></select></label>
+    </div>
+    <label class="c">Nota<input class="in" id="r-nota"></label>
+    <div class="resumen" id="r-resumen"></div>
+    <button class="btn n" onclick="renovar()">Generar renovación</button>
+  </div>
+</div></div>
+
+<div class="hoja" id="h-equipo"><div class="c">
+  <div class="t"><h2>Cambio de equipo</h2><button onclick="cerrarHoja()">×</button></div>
+  <div class="tarjeta">
+    <p class="sub" style="margin-top:0">La licencia pasa al equipo nuevo con la misma fecha de vencimiento. La del equipo anterior queda registrada como traspasada.</p>
+    <label class="c">ID del equipo NUEVO<input class="in hw" id="e-hwid" maxlength="40" spellcheck="false"></label>
+    <label class="c">Nota<input class="in" id="e-nota" placeholder="Motivo (formateo, PC nueva…)"></label>
+    <button class="btn n" onclick="cambioEquipo()">Generar licencia para el equipo nuevo</button>
+  </div>
+</div></div>
+
+<div class="hoja" id="h-listo"><div class="c">
+  <div class="t"><h2 id="o-tit">Licencia generada</h2><button onclick="cerrarHoja()">×</button></div>
+  <div class="tarjeta ok"><div class="ic">✓</div><p id="o-sub" style="margin:8px 0 0"></p></div>
+  <button class="btn n" onclick="compartirLic(ULTIMO)">Enviar archivo .lic (WhatsApp, correo…)</button>
+  <button class="btn" onclick="whatsapp(ULTIMO)">Enviar mensaje por WhatsApp</button>
+  <button class="btn" onclick="copiar(ULTIMO.licencia.mensaje,'Mensaje copiado')">Copiar mensaje</button>
+  <button class="btn" onclick="copiar(ULTIMO.licencia.token,'Código de licencia copiado')">Copiar código de licencia</button>
+  <pre class="msg" id="o-msg"></pre>
+</div></div>
+
+<div class="hoja" id="h-pass"><div class="c">
+  <div class="t"><h2>Cambiar contraseña</h2><button onclick="cerrarHoja()">×</button></div>
+  <div class="tarjeta">
+    <label class="c">Contraseña actual<input class="in" type="password" id="p-actual" autocomplete="current-password"></label>
+    <label class="c">Nueva (mínimo 8 caracteres)<input class="in" type="password" id="p-nueva" autocomplete="new-password"></label>
+    <label class="c">Repita la nueva<input class="in" type="password" id="p-nueva2" autocomplete="new-password"></label>
+    <button class="btn p" onclick="cambiarClave()">Guardar</button>
+  </div>
+</div></div>
+
+<div class="toast" id="toast"></div>
+<div class="cargando" id="cargando">Procesando…</div>
+
+<script>
+"use strict";
+const $ = (id) => document.getElementById(id);
+const enc = (s) => new TextEncoder().encode(s);
+const b64u = (b) => { let s = ""; new Uint8Array(b).forEach((x) => s += String.fromCharCode(x)); return btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, ""); };
+const d64 = (s) => Uint8Array.from(atob(s.replace(/-/g, "+").replace(/_/g, "/") + "===".slice((s.length + 3) % 4)), (c) => c.charCodeAt(0));
+const json64 = (s) => JSON.parse(new TextDecoder().decode(d64(s)));
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const f = (iso) => iso ? iso.slice(0, 10).split("-").reverse().join("/") : "—";
+const bs = (n) => Number(n || 0).toLocaleString("es-BO", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const hoy = () => { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0, 10); };
+const sumar = (iso, n) => { const d = new Date(iso + "T12:00:00Z"); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
+const difDias = (a, b) => Math.round((new Date(a + "T12:00:00Z") - new Date(b + "T12:00:00Z")) / 864e5);
+const ahoraISO = () => { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0, 19); };
+const DEPTOS = { "Cochabamba": "CBBA", "La Paz": "LPZ", "Santa Cruz": "SCZ", "Oruro": "ORU", "Potosí": "PTS", "Chuquisaca": "CHQ", "Tarija": "TJA", "Beni": "BEN", "Pando": "PDO" };
+const PLANES = [["mensual", "Mensual", "30 días", 30], ["anual", "Anual", "365 días", 365], ["personalizado", "Otro", "días a elección", 0]];
+const nPlan = { mensual: "Mensual", anual: "Anual", personalizado: "Personalizado" };
+const ESTADOS = [["todos", "Todos"], ["vigente", "Vigentes"], ["por vencer", "Por vencer"], ["en gracia", "En gracia"], ["vencida", "Vencidas"]];
+const MAX_FALLOS = 5, ESPERA_MIN = 5, BLOQUEO_INACTIVO_MIN = 5;
+
+// ---------------------------------------------------------------- almacenamiento (IndexedDB)
+let _db;
+function db() {
+  return _db ||= new Promise((ok, mal) => {
+    const r = indexedDB.open("presubo-licencias", 1);
+    r.onupgradeneeded = () => r.result.createObjectStore("kv");
+    r.onsuccess = () => ok(r.result); r.onerror = () => mal(r.error);
+  });
+}
+async function leer(k, def = null) {
+  const d = await db();
+  return new Promise((ok, mal) => { const q = d.transaction("kv").objectStore("kv").get(k); q.onsuccess = () => ok(q.result ?? def); q.onerror = () => mal(q.error); });
+}
+async function guardar(k, v) {
+  const d = await db();
+  return new Promise((ok, mal) => { const t = d.transaction("kv", "readwrite"); t.objectStore("kv").put(v, k); t.oncomplete = () => ok(); t.onerror = () => mal(t.error); });
+}
+async function borrar(k) {
+  const d = await db();
+  return new Promise((ok) => { const t = d.transaction("kv", "readwrite"); t.objectStore("kv").delete(k); t.oncomplete = () => ok(); });
+}
+
+// ---------------------------------------------------------------- criptografia
+async function llaveDeClave(clave, kdf) {
+  const base = await crypto.subtle.importKey("raw", enc(clave), "PBKDF2", false, ["deriveKey"]);
+  return crypto.subtle.deriveKey({ name: "PBKDF2", salt: d64(kdf.sal), iterations: kdf.iter, hash: "SHA-256" }, base,
+    { name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]);
+}
+async function descifrar(paq, clave) {  // -> pkcs8 (ArrayBuffer) o error si la contrasena no es correcta
+  const k = await llaveDeClave(clave, paq.kdf);
+  return crypto.subtle.decrypt({ name: "AES-GCM", iv: d64(paq.clave.iv), additionalData: enc(paq.dispositivo) }, k, d64(paq.clave.datos));
+}
+async function cifrar(paq, pkcs8, clave) {
+  const sal = crypto.getRandomValues(new Uint8Array(16)), iv = crypto.getRandomValues(new Uint8Array(12));
+  const kdf = { alg: "PBKDF2-SHA256", iter: 310000, sal: b64u(sal) };
+  const k = await llaveDeClave(clave, kdf);
+  const datos = await crypto.subtle.encrypt({ name: "AES-GCM", iv, additionalData: enc(paq.dispositivo) }, k, pkcs8);
+  return { ...paq, kdf, clave: { alg: "AES-256-GCM", iv: b64u(iv), datos: b64u(datos) } };
+}
+const firmaDe = (pkcs8) => crypto.subtle.importKey("pkcs8", pkcs8, { name: "ECDSA", namedCurve: "P-256" }, false, ["sign"]);
+async function firmarJWT(claims) {
+  const h = b64u(enc(JSON.stringify({ alg: "ES256", typ: "JWT", dlg: PAQ.dlg })));
+  const p = b64u(enc(JSON.stringify(claims)));
+  const s = await crypto.subtle.sign({ name: "ECDSA", hash: "SHA-256" }, LLAVE, enc(h + "." + p));  // r||s = formato JWT
+  return `${h}.${p}.${b64u(s)}`;
+}
+
+// ---------------------------------------------------------------- estado
+let PAQ = null, LLAVE = null, DLG = null, CLIENTES = [], OPS = [], filtro = "todos", ACTUAL = null, ULTIMO = null, NUEVO_PAQ = null;
+let planV = "mensual", planR = "mensual", ultimaActividad = Date.now();
+
+function toast(t, err) { const e = $("toast"); e.textContent = t; e.className = "toast on" + (err ? " err" : ""); clearTimeout(e._t); e._t = setTimeout(() => e.className = "toast", 4200); }
+function error(e) { toast(e?.message || String(e), true); }
+function cargando(on) { $("cargando").classList.toggle("on", on); }
+function pantalla(id) { for (const s of ["s-inicio", "s-login", "s-app"]) $(s).classList.toggle("oculto", s !== id); }
+function abrirHoja(id) { document.querySelectorAll(".hoja").forEach((h) => h.classList.remove("on")); $(id).classList.add("on"); }
+function cerrarHoja() { document.querySelectorAll(".hoja").forEach((h) => h.classList.remove("on")); }
+function copiar(t, m) { navigator.clipboard.writeText(t).then(() => toast(m), () => toast("No se pudo copiar", true)); }
+
+async function iniciar() {
+  if (!window.isSecureContext || !crypto.subtle) {
+    document.body.innerHTML = '<div class="pantalla"><div class="caja"><h1>Abra la app desde su dirección segura (https)</h1></div></div>'; return;
+  }
+  if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
+  try { navigator.storage?.persist?.(); } catch {}
+  PAQ = await leer("paquete");
+  if (!PAQ) return pantalla("s-inicio");
+  DLG = json64(PAQ.dlg.split(".")[1]);
+  $("l-movil").textContent = `${PAQ.nombre} · ${PAQ.dispositivo}`;
+  pantalla("s-login"); setTimeout(() => $("l-clave").focus(), 100);
+}
+
+// ---------------------------------------------------------------- primera activacion
+async function leerArchivoAut(inp) {
+  const a = inp.files[0]; inp.value = ""; if (!a) return null;
+  let p; try { p = JSON.parse(await a.text()); } catch { p = null; }
+  if (!p || p.tipo !== "presubo-movil" || !p.dlg || !p.clave) { toast("Ese archivo no es una autorización de PRESU-BO (.presubo-movil)", true); return null; }
+  return p;
+}
+async function leerAutorizacion(inp) {
+  const p = await leerArchivoAut(inp); if (!p) return;
+  NUEVO_PAQ = p;
+  $("aut-info").innerHTML = `<b>${esc(p.nombre)}</b> (${esc(p.dispositivo)})<br>Autorizado hasta el <b>${f(p.vence)}</b> · ${(p.clientes || []).length} cliente(s) del registro`;
+  $("aut-paso2").classList.remove("oculto"); $("aut-clave").focus();
+}
+async function activar() {
+  cargando(true);
+  try {
+    const pkcs8 = await descifrar(NUEVO_PAQ, $("aut-clave").value).catch(() => { throw new Error("Contraseña incorrecta"); });
+    await firmaDe(pkcs8);
+    const { clientes, ...paq } = NUEVO_PAQ;
+    await guardar("paquete", paq);
+    await guardar("clientes", { generado: NUEVO_PAQ.generado || ahoraISO(), lista: clientes || [] });
+    if (!(await leer("ops"))) await guardar("ops", []);
+    $("aut-clave").value = ""; NUEVO_PAQ = null;
+    PAQ = paq; DLG = json64(PAQ.dlg.split(".")[1]);
+    LLAVE = await firmaDe(pkcs8);
+    await abrirApp(); toast("Celular activado. Ya puede emitir licencias.");
+  } catch (e) { error(e); } finally { cargando(false); }
+}
+
+// ---------------------------------------------------------------- ingreso
+async function entrar() {
+  const bloq = (await leer("fallos")) || { n: 0, hasta: 0 };
+  if (bloq.hasta > Date.now()) {
+    const m = Math.ceil((bloq.hasta - Date.now()) / 60000);
+    return mostrarErrorLogin(`Demasiados intentos. Espere ${m} minuto(s).`);
+  }
+  $("l-ok").disabled = true; cargando(true);
+  try {
+    const pkcs8 = await descifrar(PAQ, $("l-clave").value);
+    LLAVE = await firmaDe(pkcs8);
+    await guardar("fallos", { n: 0, hasta: 0 });
+    $("l-clave").value = ""; $("l-error").classList.add("oculto");
+    await abrirApp();
+  } catch {
+    bloq.n += 1;
+    if (bloq.n >= MAX_FALLOS) { bloq.hasta = Date.now() + ESPERA_MIN * 60000; bloq.n = 0; }
+    await guardar("fallos", bloq);
+    mostrarErrorLogin(bloq.hasta > Date.now() ? `Contraseña incorrecta. Bloqueado ${ESPERA_MIN} minutos.` : `Contraseña incorrecta (${MAX_FALLOS - bloq.n} intento(s) más).`);
+    $("l-clave").select();
+  } finally { $("l-ok").disabled = false; cargando(false); }
+}
+function mostrarErrorLogin(t) { $("l-error").textContent = t; $("l-error").classList.remove("oculto"); }
+function bloquear() { LLAVE = null; cerrarHoja(); $("l-clave").value = ""; pantalla("s-login"); }
+for (const ev of ["pointerdown", "keydown"]) document.addEventListener(ev, () => ultimaActividad = Date.now(), { passive: true });
+setInterval(() => { if (LLAVE && Date.now() - ultimaActividad > BLOQUEO_INACTIVO_MIN * 60000) bloquear(); }, 20000);
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible" && LLAVE && Date.now() - ultimaActividad > BLOQUEO_INACTIVO_MIN * 60000) bloquear();
+});
+
+// ---------------------------------------------------------------- datos de clientes
+async function cargarDatos() {
+  const snap = (await leer("clientes")) || { generado: "", lista: [] };
+  OPS = (await leer("ops")) || [];
+  const mapa = new Map(snap.lista.map((c) => [c.clave, { ...c, origen: "PC", hist: [] }]));
+  for (const op of [...OPS].sort((a, b) => a.licencia.emitida.localeCompare(b.licencia.emitida))) {
+    const prev = mapa.get(op.cliente.clave);
+    const c = { ...(prev || {}), ...op.cliente, hist: prev?.hist || [] };
+    c.hist.push(op);
+    if (!prev || !snap.generado || op.licencia.emitida > snap.generado || !prev.hasta) {
+      Object.assign(c, { plan: op.licencia.plan, desde: op.licencia.desde, hasta: op.licencia.hasta, hwid: op.licencia.hwid, gracia: op.licencia.gracia });
+    }
+    mapa.set(op.cliente.clave, c);
+  }
+  CLIENTES = [...mapa.values()].map((c) => ({ ...c, ...estadoDe(c) }))
+    .sort((a, b) => (b.hist.at(-1)?.licencia.emitida || b.creado || "").localeCompare(a.hist.at(-1)?.licencia.emitida || a.creado || ""));
+}
+function estadoDe(c) {
+  if (!c.hasta) return { estado: "sin licencia", dias: null };
+  const dias = difDias(c.hasta, hoy());
+  if (dias < 0) return { estado: -dias <= (c.gracia || 0) ? "en gracia" : "vencida", dias };
+  return { estado: dias <= 7 ? "por vencer" : "vigente", dias };
+}
+
+async function abrirApp() {
+  pantalla("s-app"); ultimaActividad = Date.now();
+  $("h-movil").textContent = `${PAQ.nombre} · ${PAQ.dispositivo}`;
+  await cargarDatos(); avisos(); pintar(); pintarSync(); vista("clientes");
+}
+function diasAutorizacion() { return Math.floor((DLG.exp * 1000 - Date.now()) / 864e5); }
+function avisos() {
+  const d = diasAutorizacion(), pend = pendientes();
+  let h = "";
+  if (d < 0) h += `<div class="aviso ro"><b>La autorización de este celular venció.</b> Cree una nueva en la PC (📱 Móviles) y cárguela en Sincronizar.</div>`;
+  else if (d <= 15) h += `<div class="aviso am">La autorización de este celular vence en <b>${d} día(s)</b> (${f(PAQ.vence)}). Renuévela desde la PC.</div>`;
+  if (pend >= 1) h += `<div class="aviso am"><b>${pend}</b> venta(s) sin pasar a la PC. Vaya a <b>Sincronizar</b> cuando pueda.</div>`;
+  $("avisos").innerHTML = h;
+}
+const pendientes = () => OPS.filter((o) => !o.exportada).length;
+
+function vista(v) {
+  for (const x of ["clientes", "vender", "sync"]) { $("v-" + x).classList.toggle("oculto", x !== v); $("t-" + x).classList.toggle("on", x === v); }
+  if (v === "vender") prepararVenta();
+  if (v === "sync") pintarSync();
+  window.scrollTo(0, 0);
+}
+function pintar() {
+  $("chips").innerHTML = ESTADOS.map(([v, t]) => `<button class="chip ${filtro === v ? "on" : ""}" onclick="filtro='${v}';pintar()">${t}</button>`).join("");
+  const q = $("q").value.trim().toLowerCase();
+  const l = CLIENTES.filter((c) => (filtro === "todos" || c.estado === filtro) &&
+    (!q || [c.nombre, c.celular, c.clave, c.hwid, c.ci_nit, c.empresa, c.ciudad].join(" ").toLowerCase().includes(q)));
+  $("lista").innerHTML = l.length ? l.map((c) => `<div class="cli" onclick="verCliente('${esc(c.clave)}')">
+      <div><div class="n">${esc(c.nombre)}</div><div class="d">${esc(c.clave)}${c.celular ? " · " + esc(c.celular) : ""}</div>
+      <div class="d">${c.hasta ? `${nPlan[c.plan] || esc(c.plan)} · hasta ${f(c.hasta)}` : "sin licencia"}</div></div>
+      <span class="est e-${c.estado.replace(" ", "-")}">${esc(c.estado)}</span></div>`).join("")
+    : `<div class="vacio"><b>${CLIENTES.length ? "Sin resultados" : "Aún no hay clientes"}</b>${CLIENTES.length ? "" : "Use “Vender” para emitir la primera licencia, o importe los clientes de la PC en Sincronizar."}</div>`;
+}
+
+// ---------------------------------------------------------------- emision
+function limpiarHwid(v) {
+  const h = String(v || "").replace(/[\s-]/g, "").toUpperCase();
+  if (!/^[0-9A-F]{32}$/.test(h)) throw new Error("El ID del equipo debe tener 32 caracteres (0-9, A-F). Pídalo al cliente: PRESU-BO › Licencia › Copiar ID.");
+  return h;
+}
+function periodo(plan, dias, desde) {
+  const p = PLANES.find((x) => x[0] === plan); let n = p && p[3];
+  if (!n) { n = parseInt(dias, 10); if (!(n >= 1 && n <= 3660)) throw new Error("Indique los días de la licencia (1 a 3660)."); }
+  return [desde, sumar(desde, n - 1)];
+}
+function finDiaBolivia(iso) { const [y, m, d] = iso.split("-").map(Number); return Math.floor(Date.UTC(y, m - 1, d, 23, 59, 59) / 1000) + 4 * 3600; }
+function mensaje(nombre, plan, desde, hasta, tipo) {
+  const accion = { "renovación": "la renovación de su licencia", "cambio de equipo": "su licencia para el equipo nuevo" }[tipo] || "su licencia";
+  return `Hola ${nombre.split(" ")[0]}, gracias por confiar en PRESU-BO.\n\nLe envío ${accion} (plan ${plan}), válida del ${f(desde)} al ${f(hasta)}.\n\n` +
+    "Para activarla:\n1. Guarde el archivo .lic adjunto en su computadora.\n2. Abra PRESU-BO y entre al menú Licencia.\n3. Pulse \"Cargar archivo .lic\" y elija el archivo.\n\n" +
+    "La licencia funciona solo en el equipo registrado. Sus proyectos se conservan.\nCualquier consulta: contactopresubo@gmail.com\n\nIng. Alexander C.M. - PRESU-BO";
+}
+async function emitir(cliente, tipo, plan, hwid, desde, hasta, gracia, monto, pago, nota) {
+  if (!LLAVE) throw new Error("Sesión cerrada: vuelva a entrar.");
+  const ahora = Math.floor(Date.now() / 1000);
+  if (ahora > DLG.exp) throw new Error("La autorización de este celular venció. Renuévela desde la PC.");
+  const exp = finDiaBolivia(hasta);
+  if (exp <= ahora) throw new Error("La fecha de vencimiento ya pasó: revise las fechas.");
+  const claims = { iss: "PRESU-BO", sub: cliente.clave, hwid, plan, iat: ahora, exp, desde, vigencia_hasta: hasta, gracia: Math.max(0, parseInt(gracia, 10) || 0) };
+  if (cliente.nombre) claims.titular = cliente.nombre.trim().slice(0, 80);
+  const token = await firmarJWT(claims);
+  const np = nPlan[plan] || "Personalizado";
+  const archivo_lic = "# LICENCIA PRESU-BO\n" + `# Titular: ${cliente.nombre}\n` + `# Plan: ${np}  |  Valida del ${f(desde)} al ${f(hasta)}\n` +
+    `# Clave: ${cliente.clave}\n` + `# Solo funciona en el equipo ${hwid.slice(0, 6)}...\n` +
+    "# Para activar: abra PRESU-BO > Licencia > Cargar archivo .lic y elija este archivo.\n" + token + "\n";
+  const op = {
+    id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()), exportada: false,
+    cliente: { ...Object.fromEntries(["codigo", "nombre", "ci_nit", "celular", "email", "ciudad", "departamento", "empresa", "clave", "creado", "nota"].map((k) => [k, cliente[k] ?? ""])) },
+    licencia: { tipo, plan, hwid, desde, hasta, gracia: claims.gracia, monto: Number(monto) || 0, pago, nota: nota || "", emitida: ahoraISO(), token, archivo_lic,
+                mensaje: mensaje(cliente.nombre, np, desde, hasta, tipo) },
+  };
+  OPS.push(op); await guardar("ops", OPS);
+  await cargarDatos(); avisos(); pintar();
+  ULTIMO = op;
+  $("o-tit").textContent = { venta: "Licencia generada", "renovación": "Renovación generada", "cambio de equipo": "Licencia para el equipo nuevo" }[tipo];
+  $("o-sub").innerHTML = `<b>${esc(cliente.nombre)}</b><br>plan ${np} · del ${f(desde)} al ${f(hasta)}<br><span class="sub">equipo ${hwid.slice(0, 6)}… · ${esc(cliente.clave)}</span>`;
+  $("o-msg").textContent = op.licencia.mensaje;
+  abrirHoja("h-listo");
+  return op;
+}
+
+function planesHTML(sel, fn) {
+  return PLANES.map(([v, t, s]) => `<button type="button" class="plan ${sel === v ? "on" : ""}" onclick="${fn}('${v}')"><b>${t}</b><span>${s}</span></button>`).join("");
+}
+function prepararVenta() {
+  if (!$("v-departamento").options.length) $("v-departamento").innerHTML = Object.keys(DEPTOS).map((d) => `<option>${d}</option>`).join("");
+  if (!$("v-desde").value) $("v-desde").value = hoy();
+  elegirPlanV(planV);
+}
+function elegirPlanV(p) { planV = p; $("v-planes").innerHTML = planesHTML(p, "elegirPlanV"); $("v-dias-c").style.visibility = p === "personalizado" ? "visible" : "hidden"; resumenV(); }
+function resumenV() {
+  try { const [d, h] = periodo(planV, $("v-dias").value, $("v-desde").value || hoy()); $("v-resumen").innerHTML = `Válida del <b>${f(d)}</b> al <b>${f(h)}</b> + ${$("v-gracia").value || 0} días de gracia`; }
+  catch { $("v-resumen").textContent = ""; }
+}
+for (const id of ["v-desde", "v-dias", "v-gracia"]) document.addEventListener("input", (e) => e.target.id === id && resumenV());
+function nuevaClave(depto) {
+  const pre = `PRESU-BO-${DEPTOS[depto] || "BO"}-${PAQ.dispositivo.slice(1)}`;
+  const usadas = new Set(CLIENTES.map((c) => c.clave));
+  let n = 1; while (usadas.has(pre + String(n).padStart(2, "0"))) n++;
+  return pre + String(n).padStart(2, "0");
+}
+async function vender() {
+  try {
+    const nombre = $("v-nombre").value.trim();
+    if (!nombre) throw new Error("Escriba el nombre del cliente.");
+    const hwid = limpiarHwid($("v-hwid").value);
+    const [desde, hasta] = periodo(planV, $("v-dias").value, $("v-desde").value || hoy());
+    if (hasta < hoy()) throw new Error("Ese período ya terminó: revise la fecha de inicio.");
+    const depto = $("v-departamento").value;
+    const c = { nombre, departamento: depto, clave: nuevaClave(depto), creado: ahoraISO() };
+    for (const k of ["ci_nit", "celular", "email", "ciudad", "empresa"]) c[k] = $("v-" + k).value.trim();
+    c.nota = "";
+    cargando(true);
+    await emitir(c, "venta", planV, hwid, desde, hasta, $("v-gracia").value, $("v-monto").value, $("v-pago").value, $("v-nota").value);
+    for (const k of ["nombre", "ci_nit", "celular", "email", "ciudad", "empresa", "hwid", "monto", "nota"]) $("v-" + k).value = "";
+    $("v-desde").value = hoy();
+  } catch (e) { error(e); } finally { cargando(false); }
+}
+
+// ---------------------------------------------------------------- ficha del cliente
+function verCliente(clave) {
+  const c = CLIENTES.find((x) => x.clave === clave); if (!c) return;
+  ACTUAL = c;
+  $("c-nombre").textContent = c.nombre;
+  const fila = (t, v) => v ? `<dt>${t}</dt><dd>${v}</dd>` : "";
+  $("c-datos").innerHTML = fila("Estado", `<span class="est e-${c.estado.replace(" ", "-")}">${esc(c.estado)}</span>` + (c.dias != null ? ` <span class="sub">${c.dias >= 0 ? `quedan ${c.dias} día(s)` : `venció hace ${-c.dias} día(s)`}</span>` : "")) +
+    fila("Clave", esc(c.clave)) + fila("Plan", c.hasta ? `${nPlan[c.plan] || esc(c.plan)} · ${f(c.desde)} al ${f(c.hasta)}` : "") +
+    fila("Equipo", c.hwid ? `<span style="font-family:monospace;font-size:12px">${esc(c.hwid)}</span>` : "") +
+    fila("CI / NIT", esc(c.ci_nit)) + fila("Celular", esc(c.celular)) + fila("Correo", esc(c.email)) +
+    fila("Ciudad", esc([c.ciudad, c.departamento].filter(Boolean).join(", "))) + fila("Empresa", esc(c.empresa)) + fila("Registro", c.origen === "PC" ? "PC" : "este celular");
+  $("c-hist").innerHTML = c.hist.length ? [...c.hist].reverse().map((o) => `<div class="hist"><b>${esc(o.licencia.tipo)}</b> · ${f(o.licencia.emitida)} · ${nPlan[o.licencia.plan] || o.licencia.plan}
+      hasta ${f(o.licencia.hasta)} · Bs ${bs(o.licencia.monto)} ${o.exportada ? "· <span class='sub'>ya en la PC</span>" : "· <span style='color:var(--ambar)'>pendiente de pasar a la PC</span>"}</div>`).join("")
+    : `<p class="sub" style="margin:0">Las licencias anteriores de este cliente están en el registro de la PC.</p>`;
+  $("c-reenviar").classList.toggle("oculto", !c.hist.length);
+  abrirHoja("h-cliente");
+}
+function reenviar() { ULTIMO = ACTUAL.hist.at(-1); compartirLic(ULTIMO); }
+function abrirRenovar() {
+  const c = ACTUAL;
+  const desde = c.hasta && sumar(c.hasta, 1) > hoy() ? sumar(c.hasta, 1) : hoy();  // renovar antes de vencer no pierde dias
+  $("r-desde").value = desde; $("r-hwid").value = c.hwid || ""; $("r-monto").value = ""; $("r-nota").value = "";
+  elegirPlanR(c.plan && c.plan !== "personalizado" ? c.plan : "mensual"); abrirHoja("h-renovar");
+}
+function elegirPlanR(p) { planR = p; $("r-planes").innerHTML = planesHTML(p, "elegirPlanR"); $("r-dias-c").style.visibility = p === "personalizado" ? "visible" : "hidden"; resumenR(); }
+function resumenR() { try { const [d, h] = periodo(planR, $("r-dias").value, $("r-desde").value || hoy()); $("r-resumen").innerHTML = `Nueva vigencia: del <b>${f(d)}</b> al <b>${f(h)}</b>`; } catch { $("r-resumen").textContent = ""; } }
+for (const id of ["r-desde", "r-dias"]) document.addEventListener("input", (e) => e.target.id === id && resumenR());
+async function renovar() {
+  try {
+    const hwid = limpiarHwid($("r-hwid").value);
+    const [desde, hasta] = periodo(planR, $("r-dias").value, $("r-desde").value || hoy());
+    if (hasta < hoy()) throw new Error("Ese período ya terminó: revise la fecha de inicio.");
+    cargando(true);
+    await emitir(ACTUAL, "renovación", planR, hwid, desde, hasta, ACTUAL.gracia ?? 5, $("r-monto").value, $("r-pago").value, $("r-nota").value);
+  } catch (e) { error(e); } finally { cargando(false); }
+}
+function abrirEquipo() {
+  if (!ACTUAL.hasta) return toast("El cliente no tiene licencia: use Renovar.", true);
+  if (ACTUAL.hasta < hoy()) return toast("La licencia ya venció: haga una renovación (puede poner el equipo nuevo ahí).", true);
+  $("e-hwid").value = ""; $("e-nota").value = ""; abrirHoja("h-equipo");
+}
+async function cambioEquipo() {
+  try {
+    const hwid = limpiarHwid($("e-hwid").value);
+    if (hwid === ACTUAL.hwid) throw new Error("Es el mismo equipo de la licencia actual.");
+    cargando(true);
+    await emitir(ACTUAL, "cambio de equipo", ACTUAL.plan, hwid, hoy(), ACTUAL.hasta, ACTUAL.gracia ?? 5, 0, "",
+      ($("e-nota").value + ` (antes en equipo ${(ACTUAL.hwid || "").slice(0, 8)}...)`).trim());
+  } catch (e) { error(e); } finally { cargando(false); }
+}
+
+// ---------------------------------------------------------------- compartir
+function descargar(nombre, texto) {
+  const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([texto], { type: "application/octet-stream" }));
+  a.download = nombre; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 2000);
+}
+async function compartirArchivo(nombre, texto, titulo) {
+  const file = new File([texto], nombre, { type: "text/plain" });
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    try { await navigator.share({ files: [file], title: titulo }); return true; }
+    catch (e) { if (e.name === "AbortError") return false; }
+  }
+  descargar(nombre, texto); toast(`Guardado en Descargas: ${nombre}`); return true;
+}
+const limpio = (t) => String(t).normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^A-Za-z0-9 .-]/g, "").trim();
+function compartirLic(op) {
+  const l = op.licencia;
+  return compartirArchivo(`Licencia PRESU-BO - ${limpio(op.cliente.nombre)} - hasta ${f(l.hasta).replace(/\//g, "-")} - equipo ${l.hwid.slice(0, 6)}.lic`, l.archivo_lic, "Licencia PRESU-BO");
+}
+function whatsapp(op) {
+  let cel = String(op.cliente.celular || "").replace(/\D/g, "");
+  if (cel.length === 8) cel = "591" + cel;
+  window.open(`https://wa.me/${cel}?text=${encodeURIComponent(op.licencia.mensaje)}`, "_blank");
+}
+
+// ---------------------------------------------------------------- sincronizacion
+function pintarSync() {
+  const p = pendientes();
+  $("s-pend").innerHTML = OPS.length ? `<b>${p}</b> venta(s) pendientes de pasar a la PC · ${OPS.length} emitidas en este celular` : "Aún no emitió licencias en este celular.";
+  const d = diasAutorizacion();
+  $("s-info").innerHTML = `<dt>Nombre</dt><dd>${esc(PAQ.nombre)}</dd><dt>Código</dt><dd>${esc(PAQ.dispositivo)}</dd>
+    <dt>Autorizado hasta</dt><dd>${f(PAQ.vence)} <span class="sub">(${d >= 0 ? `quedan ${d} días` : "vencida"})</span></dd>`;
+}
+async function exportarPC() {
+  try {
+    if (!OPS.length) return toast("No hay ventas en este celular para exportar.");
+    const datos = { tipo: "presubo-sync", v: 1, dispositivo: PAQ.dispositivo, generado: ahoraISO(),
+      operaciones: OPS.map((o) => ({ cliente: o.cliente, licencia: { ...o.licencia, mensaje: undefined } })) };
+    const ok = await compartirArchivo(`Ventas movil ${PAQ.dispositivo} ${hoy()}.presubo-sync`, JSON.stringify(datos), "Ventas PRESU-BO para la PC");
+    if (ok) { OPS.forEach((o) => o.exportada = true); await guardar("ops", OPS); await cargarDatos(); avisos(); pintarSync(); }
+  } catch (e) { error(e); }
+}
+async function importarClientes(inp) {
+  const a = inp.files[0]; inp.value = ""; if (!a) return;
+  try {
+    const d = JSON.parse(await a.text());
+    if (d.tipo !== "presubo-clientes") throw new Error("Ese archivo no es la lista de clientes de la PC (.presubo-clientes).");
+    await guardar("clientes", { generado: d.generado, lista: d.clientes || [] });
+    await cargarDatos(); avisos(); pintar(); toast(`${(d.clientes || []).length} cliente(s) de la PC cargados`);
+  } catch (e) { error(e.message.includes("JSON") ? new Error("Archivo no válido") : e); }
+}
+async function renovarAutorizacion(inp) {
+  const p = await leerArchivoAut(inp); if (!p) return;
+  const clave = prompt(`Autorización de "${p.nombre}" hasta el ${f(p.vence)}.\nEscriba la contraseña con la que la creó en la PC:`);
+  if (!clave) return;
+  cargando(true);
+  try {
+    const pkcs8 = await descifrar(p, clave).catch(() => { throw new Error("Contraseña incorrecta"); });
+    const { clientes, ...paq } = p;
+    await guardar("paquete", paq); PAQ = paq; DLG = json64(PAQ.dlg.split(".")[1]); LLAVE = await firmaDe(pkcs8);
+    if (clientes?.length) await guardar("clientes", { generado: p.generado || ahoraISO(), lista: clientes });
+    await abrirApp(); toast("Autorización actualizada. Use la nueva contraseña para entrar.");
+  } catch (e) { error(e); } finally { cargando(false); }
+}
+async function cambiarClave() {
+  try {
+    const n = $("p-nueva").value;
+    if (n.length < 8) throw new Error("La contraseña nueva debe tener al menos 8 caracteres.");
+    if (n !== $("p-nueva2").value) throw new Error("Las contraseñas nuevas no coinciden.");
+    cargando(true);
+    const pkcs8 = await descifrar(PAQ, $("p-actual").value).catch(() => { throw new Error("La contraseña actual no es correcta"); });
+    PAQ = await cifrar(PAQ, pkcs8, n); await guardar("paquete", PAQ);
+    for (const id of ["p-actual", "p-nueva", "p-nueva2"]) $(id).value = "";
+    cerrarHoja(); toast("Contraseña cambiada");
+  } catch (e) { error(e); } finally { cargando(false); }
+}
+async function borrarTodo() {
+  const p = pendientes();
+  if (!confirm((p ? `ATENCIÓN: hay ${p} venta(s) sin pasar a la PC y se perderán.\n\n` : "") + "¿Quitar la autorización y borrar los datos de este celular?")) return;
+  for (const k of ["paquete", "clientes", "ops", "fallos"]) await borrar(k);
+  LLAVE = PAQ = null; location.reload();
+}
+
+window.addEventListener("unhandledrejection", (e) => { e.preventDefault(); error(e.reason); });
+iniciar();
+</script>
+</body>
+</html>
